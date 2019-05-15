@@ -16,6 +16,8 @@ vector<vector<int>> rev_net_edges;
 //матрица для хранения весов уже выровненных вершин
 vector<vector<double>> old_alg;
 
+//индекс вершины, которая должна быть обязательно выровнена (ядро)
+int core;
 //максимальное количество невыровненных вершин
 int max_cnt_unaligned;
 //штраф за одну невыровненную вершину в результате
@@ -282,18 +284,13 @@ void try_to_read_vars(string file_name)
 		{
 			fill_subst_matr(in_file);
 
+			try_to_read_var(core, in_file);
 			try_to_read_var(max_cnt_unaligned, in_file);
-
 			try_to_read_var(fine_incomplete, in_file);
-
 			try_to_read_var(avg_fine, in_file);
-
 			try_to_read_var(fine_stretch, in_file);
-
 			try_to_read_var(coeff_fine_stretch, in_file);
-
 			try_to_read_var(fine_split, in_file);
-
 			try_to_read_var(coeff_fine_split, in_file);
 
 			in_file.close();
@@ -533,7 +530,7 @@ void testing_alignment(Net& const pattern, Net& const in_net)
 	vector<set<int>> alignment(pattern.length);
 	vector<int> count_split(in_net.length, 0);
 
-	for (int i = 0; i < in_net.length; i++)
+	/*for (int i = 0; i < in_net.length; i++)
 	{
 		for (int j = 0; j < pattern.length; j++)
 		{
@@ -548,6 +545,20 @@ void testing_alignment(Net& const pattern, Net& const in_net)
 			count_split[i] = 0;
 			alignment[j].erase(in_net.net[i].index);
 		}
+	}*/
+
+	for (int i = 0; i < in_net.length; i++)
+	{
+		alignment[core].insert(in_net.net[i].index);
+		count_split[i] = 1;
+
+		ways.insert({ { pattern.net[core].index },
+			alignment,
+			0 + fine(pattern.net[core],in_net.net[i], pattern.display, in_net.display),
+			count_split });
+
+		count_split[i] = 0;
+		alignment[core].erase(in_net.net[i].index);
 	}
 
 	while (true)
@@ -582,18 +593,19 @@ void testing_alignment(Net& const pattern, Net& const in_net)
 		for (int i : actual_nodes)
 			for (int x : best_now_way.conformity[pattern.display[i]]) //для каждой вершины, выровненной с актуальной
 				for (int index_next_node_in_net : in_net.net[in_net.display[x]].adjacent_nodes) // для каждой вершины в сети, смежной с какой-либо из тех, с кем веровнена актуальная
+				{ 
 					for (int index_next_node_in_pattern : pattern.net[pattern.display[i]].adjacent_nodes) // для каждой вершины в паттерне, смежной с актуальной
-					{
 						add_way_to_queue(pattern, in_net, best_now_way, ways, index_next_node_in_pattern, index_next_node_in_net, 0);
-						add_way_to_queue(pattern, in_net, best_now_way, ways, i, index_next_node_in_net, 1);
-					}
+					add_way_to_queue(pattern, in_net, best_now_way, ways, i, index_next_node_in_net, 1);
+				}
 		for (int i : actual_nodes)
 			for (int x : best_now_way.conformity[pattern.display[i]]) //для каждой вершины, выровненной с актуальной
 				for (int index_previous_node_in_net : rev_net_edges[in_net.display[x]]) // для каждой вершины в сети, смежной с какой-либо из тех, с кем веровнена актуальная
+				{
 					for (int index_next_node_in_pattern : rev_pat_edges[pattern.display[i]]) // для каждой вершины в паттерне, смежной с актуальной
-					{
+					
 						add_way_to_queue(pattern, in_net, best_now_way, ways, index_next_node_in_pattern, index_previous_node_in_net, 0);
-						add_way_to_queue(pattern, in_net, best_now_way, ways, i, index_previous_node_in_net, 1);
-					}
+					add_way_to_queue(pattern, in_net, best_now_way, ways, i, index_previous_node_in_net, 1);
+				}
 	}
 }
